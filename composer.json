@@ -1,0 +1,19 @@
+{
+  "name": "digitaldogsbody/mingulay",
+  "description": "A Zip file parser and range extractor",
+  "type": "library",
+  "license": "AGPL-3.0-or-later",
+  "homepage": "https://github.com/digitaldogsbody/mingulay",
+  "authors": [
+    {
+      "name": "Mike Bennett",
+      "email": "mike@digitaldogsbody.net",
+      "homepage": "https://github.com/digitaldogsbody",
+      "role": "Developer"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=7.3"
+  }
+}

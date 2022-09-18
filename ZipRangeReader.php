@@ -23,13 +23,12 @@ class ZipRangeReader
     const MAX_EXTRA = 65535;
 
     protected $stream;
-    protected $eocd_offset;
-    protected $cdr_offset;
-    protected $cdr_size;
-    protected $cdr_total;
 
+    public $eocd_offset;
+    public $cdr_offset;
+    public $cdr_size;
+    public $cdr_total;
     public $files;
-
 
     /**
      * Create a new ZipRangeReader object, attempt to parse the zip file and populate a list with file details
@@ -161,7 +160,7 @@ class ZipRangeReader
 
             // Check the directory header is valid
             if($unpacked["header"] != self::CDFH_SIG) {
-                // TODO: Raise a warning here
+                trigger_error("Invalid Central Directory Header detected", E_USER_WARNING);
                 continue;
             }
 

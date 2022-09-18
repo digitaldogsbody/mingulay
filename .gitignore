@@ -1,0 +1,9 @@
+## Mingulay .gitignore
+
+# PHPStorm
+.idea/
+
+# Composer
+vendor/
+composer.lock
+

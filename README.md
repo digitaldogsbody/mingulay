@@ -9,10 +9,30 @@ It searches for the End of Central Directory Record, parses out the data, and th
 
 ### Usage
 Mingulay requires an object that implements the `Mingulay\SeekerInterface` interface. A LocalFileSeeker implementation is provided for working with Zip files on disk.
+
 ```php
-$seeker = new \Mingulay\Seeker\LocalFileSeeker("example.zip")
-$zip_info = new ZipRangeReader($seeker);
+$seeker = new \Mingulay\Seeker\LocalFileSeeker("src/Test/fixtures/single-file.zip");
+$zip_info = new \Mingulay\ZipRangeReader($seeker);
 var_dump($zip_info->files);
+```
+```
+array(1) {
+  [0]=>
+  array(6) {
+    ["file_name"]=>
+    string(9) "README.md"
+    ["offset"]=>
+    int(0)
+    ["compressed_size"]=>
+    int(43)
+    ["uncompressed_size"]=>
+    int(43)
+    ["CRC32"]=>
+    string(8) "C6E036CC"
+    ["comment"]=>
+    string(0) ""
+  }
+}
 ```
 
 ### Acknowledgements and thanks

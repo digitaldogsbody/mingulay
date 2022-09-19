@@ -2,8 +2,7 @@
 
 namespace Mingulay;
 
-use Mingulay\Exception\NotResource;
-use Mingulay\Exception\NotSeekable;
+use Mingulay\Exception\NoData;
 use Mingulay\Exception\InvalidZipFile;
 
 /**
@@ -32,6 +31,12 @@ class ZipRangeReader
      * Maximum extra bytes at the end of a file after the EOCD
      */
     const MAX_EXTRA = 65535;
+
+    /**
+     * The Seeker to use.
+     * @var SeekerInterface
+     */
+    protected $seeker;
 
     /**
      * The file handle of the Zip object.
@@ -73,42 +78,25 @@ class ZipRangeReader
     /**
      * Create a new ZipRangeReader object, attempt to parse the zip file and populate a list with file details.
      *
-     * @param resource $stream A file handle to a seekable file.
+     * @param SeekerInterface $seeker The Seeker instance providing data.
+     * @throws InvalidZipFile Thrown if the Zip file is invalid.
+     * @throws NoData Thrown if the Seeker provides a null response
      *
-     * @throws NotResource - Returned if the $stream value is not a file handle.
-     * @throws NotSeekable - Returned if the $stream file handle is not seekable.
-     * @throws InvalidZipFile - Returned if the Zip file is invalid.
-     *
-     * Example Usage:
-     * $zip_info = new ZipRangeReader('example.zip')
-     * var_dump($zip_info->files)
      */
-    public function __construct($stream)
+    public function __construct(SeekerInterface $seeker)
     {
-        $this->stream = $stream;
+        $this->seeker = $seeker;
         $this->files = array();
 
-        // Failsafes //
-        // Check that the provided argument is a file handler
-        // It would be nice to do this with a type hint, but PHP does not yet support this
-        if (!is_resource($this->stream)) {
-            throw new NotResource("The argument to ZipRangeReader must be a file pointer");
-        }
-        // Check the file handler is seekable
-        if (!stream_get_meta_data($this->stream)['seekable']) {
-            throw new NotSeekable("The file pointer passed to ZipRangeReader must be seekable");
-        }
-
         // Look for the EOCD Record
-        if(!$this->findEOCD()) {
-            throw new InvalidZipFile("The provided file does not have an EOCD record");
-        }
+        $eocd = $this->findEOCD();
 
         // Retrieve Central Directory record details
-        if(!$this->retrieveCDRInfo()) {
+        if(!$this->retrieveCDRInfo($eocd)) {
             throw new InvalidZipFile("The EOCD record does not have valid Central Directory information");
         }
 
+        // Populate the files array
         $this->populateFiles();
     }
 
@@ -118,24 +106,25 @@ class ZipRangeReader
      * This should be the last data structure in the file, with an optional comment afterwards.
      * Therefore we seek back from the end of the file, starting at the default size of an EOCD, and look for the
      * magic 4 byte signature of the EOCD record. If not found, walk back 1 byte at a time up to the maximum permitted
-     * offset until either the EOCD is found, the max offset is reached, or the start of the file is reached.
+     * offset until either the EOCD is found, the max offset is reached, or we run out of data from the Seeker.
      *
-     * @return bool true if EOCD was found, false otherwise.
+     * @return string The EOCD record
+     * @throws NoData Thrown if the Seeker returns a null response
+     * @throws InvalidZipFile Thrown if the Zip file does not have an EOCD Record
      */
-    private function findEOCD(): bool
+    private function findEOCD(): string
     {
+        $data = $this->seeker->retrieveEnd(self::EOCD_LENGTH + self::MAX_EXTRA);
+        if(is_null($data)) {
+            throw new NoData("No data could be read from the Seeker when attempting to retrieve EOCD");
+        }
+
         $current_pos = 0 - self::EOCD_LENGTH;
         $found_eocd_header = false;
 
-        while(!$found_eocd_header && $current_pos > (0-self::EOCD_LENGTH-self::MAX_EXTRA)) {
-            $seek_success = fseek($this->stream, $current_pos, SEEK_END);
-            // Check we didn't try and seek past the start of the file
-            if($seek_success === -1) {
-                return false;
-            }
-            $data = fread($this->stream, 4);
-            $data_int = @unpack("I*", $data)[1];
-            if($data_int === self::EOCD_SIG) {
+        while(!$found_eocd_header && $current_pos > (0 - strlen($data))) {
+            $bytes = @unpack("I*", substr($data, $current_pos, 4))[1];
+            if($bytes === self::EOCD_SIG) {
                 $found_eocd_header = true;
                 $this->eocd_offset = $current_pos;
             }
@@ -143,15 +132,19 @@ class ZipRangeReader
                 $current_pos--;
             }
         }
-        return $found_eocd_header;
+        if(!$found_eocd_header) {
+            throw new InvalidZipFile("No EOCD record was found");
+        }
+        return substr($data, $current_pos, 22);
     }
 
     /**
      * Read information about the Central Directory Records from the EOCD.
      *
+     * @param string $eocd The EOCD record.
      * @return bool true if the CDR information was parsed successfully, false otherwise.
      */
-    private function retrieveCDRInfo(): bool
+    private function retrieveCDRInfo(string $eocd): bool
     {
         // We only need a part of the EOCD to get the Central Directory information
         // Data            | Offset | Bytes
@@ -159,16 +152,12 @@ class ZipRangeReader
         // Size of CD      | 12     | 4
         // Offset of CDR   | 16     | 4
 
-        // We can retrieve all the bytes at once and use unpack to split them into shorts/longs
-        fseek($this->stream, $this->eocd_offset+10, SEEK_END);
-        $data = fread($this->stream, 10);
-
         // Unpack bytes to short (2 bytes) or long (4 bytes)
         // Short is used instead of int to ensure it is 16 bits
         // Additionally we force little-endian types, as this is what Zip format uses
         // We also name the elements, otherwise they overwrite each other and we only get the last one (thanks PHP!)
         // See https://www.php.net/manual/en/function.unpack.php Caution box
-        $unpacked = unpack("vtotal/Vsize/Voffset", $data);
+        $unpacked = unpack("vtotal/Vsize/Voffset", substr($eocd, 10, 10));
         if(count($unpacked) !== 3) {
             return false;
         }
@@ -189,27 +178,41 @@ class ZipRangeReader
      * Read the Central Directory Records and populate an array of information for each file in the ZIP.
      *
      * @return void
+     * @throws NoData Thrown if the Seeker provides a null response
      */
     private function populateFiles()
     {
-        // Seek to start of first CDR
-        fseek($this->stream, $this->cdr_offset, SEEK_SET);
+        // Retrieve the CDR data
+        $data = $this->seeker->retrieveStart($this->cdr_size, $this->cdr_offset);
+        if(is_null($data)) {
+            throw new NoData("No data could be read from the Seeker when attempting to retrieve CDRs");
+        }
+
+        // Track the current position within the data stream, since records can be variable length
+        $current_position = 0;
 
         for($i = 0; $i < $this->cdr_total; $i++) {
             // Retrieve the fixed length parts of the record and unpack them
-            $data = fread($this->stream, 46);
-            $unpacked = unpack("Vheader/vversion/vextract/vgeneral/vcompression/vtime/vdate/H8crc/Vcsize/Vusize/vfnlength/veflength/vfclength/vdisk/viattrib/Veattrib/Voffset", $data);
+            $record = substr($data, $current_position, 46);
+            $current_position += 46;
+
+            $unpacked = unpack("Vheader/vversion/vextract/vgeneral/vcompression/vtime/vdate/H8crc/Vcsize/Vusize/vfnlength/veflength/vfclength/vdisk/viattrib/Veattrib/Voffset", $record);
+
             // Use the length data in fnlength, eflength, and fclength to retrieve the rest of the record
-            $file_name = fread($this->stream, $unpacked['fnlength']);
+            $file_name = substr($data, $current_position, $unpacked['fnlength']);
+            $current_position += $unpacked['fnlength'];
+;
             if ($unpacked["eflength"] > 0) {
-                $extra_field = fread($this->stream, $unpacked['eflength']);
+                $extra_field = substr($data, $current_position, $unpacked['eflength']);
+                $current_position += $unpacked['eflength'];
             }
             else {
                 $extra_field = null;
             }
 
             if ($unpacked["fclength"] > 0) {
-                $file_comment = fread($this->stream, $unpacked['fclength']);
+                $file_comment = substr($data, $current_position, $unpacked['fclength']);
+                $current_position += $unpacked['fclength'];
             }
             else {
                 $file_comment = "";

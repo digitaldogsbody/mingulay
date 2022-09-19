@@ -2,10 +2,9 @@
 
 namespace Mingulay;
 
-use Mingulay\Exception\NotResource;
 use PHPUnit\Framework\TestCase;
+use Mingulay\Seeker\LocalSeeker;
 use Mingulay\Exception\InvalidZipFile;
-use Mingulay\Exception\NotSeekable;
 
 
 /**
@@ -21,8 +20,8 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFile()
     {
-        $fp = fopen(self::FIXTURE_PATH . "single-file.zip", "rb");
-        $zip_info = new ZipRangeReader($fp);
+        $seeker = new LocalSeeker(self::FIXTURE_PATH . "single-file.zip");
+        $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
         $this->assertEquals(82, $zip_info->cdr_offset);
@@ -33,8 +32,6 @@ class ZipRangeReaderTest extends TestCase
         $this->assertEquals(43, $zip_info->files[0]["uncompressed_size"]);
         $this->assertEquals(43, $zip_info->files[0]["compressed_size"]);
         $this->assertEquals("C6E036CC", $zip_info->files[0]["CRC32"]);
-
-        fclose($fp);
     }
 
     /**
@@ -42,8 +39,8 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithMultipleFiles()
     {
-        $fp = fopen(self::FIXTURE_PATH . "multiple-files.zip", "rb");
-        $zip_info = new ZipRangeReader($fp);
+        $seeker = new LocalSeeker(self::FIXTURE_PATH . "multiple-files.zip");
+        $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
         $this->assertEquals(11342, $zip_info->cdr_offset);
@@ -54,8 +51,6 @@ class ZipRangeReaderTest extends TestCase
         $this->assertEquals(34523, $zip_info->files[0]["uncompressed_size"]);
         $this->assertEquals(11223, $zip_info->files[0]["compressed_size"]);
         $this->assertEquals("README.md", $zip_info->files[1]["file_name"]);
-
-        fclose($fp);
     }
 
     /**
@@ -63,12 +58,10 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFileWithComment()
     {
-        $fp = fopen(self::FIXTURE_PATH . "single-file-with-comment.zip", "rb");
-        $zip_info = new ZipRangeReader($fp);
+        $seeker = new LocalSeeker(self::FIXTURE_PATH . "single-file-with-comment.zip");
+        $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-67, $zip_info->eocd_offset);
-
-        fclose($fp);
     }
 
     /**
@@ -76,12 +69,10 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithMultipleFilesWithComment()
     {
-        $fp = fopen(self::FIXTURE_PATH . "multiple-files-with-comment.zip", "rb");
-        $zip_info = new ZipRangeReader($fp);
+        $seeker = new LocalSeeker(self::FIXTURE_PATH . "multiple-files-with-comment.zip");
+        $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-56, $zip_info->eocd_offset);
-
-        fclose($fp);
     }
 
     /**
@@ -89,24 +80,13 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFileWithFileComment()
     {
-        $fp = fopen(self::FIXTURE_PATH . "single-file-with-file-comment.zip", "rb");
-        $zip_info = new ZipRangeReader($fp);
+        $seeker = new LocalSeeker(self::FIXTURE_PATH . "single-file-with-file-comment.zip");
+        $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
         $this->assertEquals(82, $zip_info->cdr_offset);
         $this->assertEquals(125, $zip_info->cdr_size);
         $this->assertEquals("This is an individual file comment", $zip_info->files[0]["comment"]);
-
-        fclose($fp);
-    }
-
-    /**
-     * Test that the constructor errors out if you pass it a non-resource object.
-     */
-    public function testConstructWithInvalidFD()
-    {
-        $this->expectException(NotResource::class);
-        $zip_info = new ZipRangeReader("you can't pass a string!");
     }
 
     /**
@@ -115,9 +95,8 @@ class ZipRangeReaderTest extends TestCase
     public function testConstructWithInvalidFile()
     {
         $this->expectException(InvalidZipFile::class);
-        $fp = fopen(self::FIXTURE_PATH . "invalid-file.zip", "rb");
-        $zip_info = new ZipRangeReader($fp);
-        fclose($fp);
+        $seeker = new LocalSeeker(self::FIXTURE_PATH . "invalid-file.zip");
+        $zip_info = new ZipRangeReader($seeker);
     }
 
     /**
@@ -126,9 +105,8 @@ class ZipRangeReaderTest extends TestCase
     public function testConstructWithInvalidEOCD()
     {
         $this->expectException(InvalidZipFile::class);
-        $fp = fopen(self::FIXTURE_PATH . "invalid-eocd.zip", "rb");
-        $zip_info = new ZipRangeReader($fp);
-        fclose($fp);
+        $seeker = new LocalSeeker(self::FIXTURE_PATH . "invalid-eocd.zip");
+        $zip_info = new ZipRangeReader($seeker);
     }
 
     /**
@@ -138,19 +116,7 @@ class ZipRangeReaderTest extends TestCase
     {
         $this->expectWarning();
         $this->expectWarningMessage("Invalid Central Directory Header detected");
-        $fp = fopen(self::FIXTURE_PATH . "invalid-cdr.zip", "rb");
-        $zip_info = new ZipRangeReader($fp);
-        fclose($fp);
-    }
-
-    /**
-     * Test that the constructor errors out if you pass it a non-seekable resource.
-     */
-    public function testConstructWithNonSeekableFile()
-    {
-        $this->expectException(NotSeekable::class);
-        $fp = fopen("php://stdin", "rb");
-        $zip_info = new ZipRangeReader($fp);
-        fclose($fp);
+        $seeker = new LocalSeeker(self::FIXTURE_PATH . "invalid-cdr.zip");
+        $zip_info = new ZipRangeReader($seeker);
     }
 }

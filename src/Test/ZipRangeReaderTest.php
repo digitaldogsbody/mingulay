@@ -3,7 +3,7 @@
 namespace Mingulay;
 
 use PHPUnit\Framework\TestCase;
-use Mingulay\Seeker\LocalSeeker;
+use Mingulay\Seeker\LocalFileSeeker;
 use Mingulay\Exception\InvalidZipFile;
 
 
@@ -20,7 +20,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFile()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH . "single-file.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "single-file.zip");
         $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
@@ -39,7 +39,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithMultipleFiles()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH . "multiple-files.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "multiple-files.zip");
         $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
@@ -58,7 +58,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFileWithComment()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH . "single-file-with-comment.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "single-file-with-comment.zip");
         $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-67, $zip_info->eocd_offset);
@@ -69,7 +69,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithMultipleFilesWithComment()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH . "multiple-files-with-comment.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "multiple-files-with-comment.zip");
         $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-56, $zip_info->eocd_offset);
@@ -80,7 +80,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFileWithFileComment()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH . "single-file-with-file-comment.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "single-file-with-file-comment.zip");
         $zip_info = new ZipRangeReader($seeker);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
@@ -95,7 +95,7 @@ class ZipRangeReaderTest extends TestCase
     public function testConstructWithInvalidFile()
     {
         $this->expectException(InvalidZipFile::class);
-        $seeker = new LocalSeeker(self::FIXTURE_PATH . "invalid-file.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "invalid-file.zip");
         $zip_info = new ZipRangeReader($seeker);
     }
 
@@ -105,7 +105,7 @@ class ZipRangeReaderTest extends TestCase
     public function testConstructWithInvalidEOCD()
     {
         $this->expectException(InvalidZipFile::class);
-        $seeker = new LocalSeeker(self::FIXTURE_PATH . "invalid-eocd.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "invalid-eocd.zip");
         $zip_info = new ZipRangeReader($seeker);
     }
 
@@ -116,7 +116,7 @@ class ZipRangeReaderTest extends TestCase
     {
         $this->expectWarning();
         $this->expectWarningMessage("Invalid Central Directory Header detected");
-        $seeker = new LocalSeeker(self::FIXTURE_PATH . "invalid-cdr.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "invalid-cdr.zip");
         $zip_info = new ZipRangeReader($seeker);
     }
 }

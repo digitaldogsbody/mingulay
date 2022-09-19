@@ -4,10 +4,10 @@ namespace Mingulay;
 
 use PHPUnit\Framework\TestCase;
 use Mingulay\Exception\NotSeekable;
-use Mingulay\Seeker\LocalSeeker;
+use Mingulay\Seeker\LocalFileSeeker;
 
 /**
- * Test suite for LocalSeeker.
+ * Test suite for LocalFileSeeker.
  */
 class LocalSeekerTest extends TestCase
 {
@@ -19,7 +19,7 @@ class LocalSeekerTest extends TestCase
      */
     public function testRetrieveStart()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH .  "single-file.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH .  "single-file.zip");
         $this->assertEquals("504b", unpack("H*",$seeker->retrieveStart(2))[1]);
     }
 
@@ -28,7 +28,7 @@ class LocalSeekerTest extends TestCase
      */
     public function testRetrieveStartWithOffset()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH .  "single-file.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH .  "single-file.zip");
         $this->assertEquals("0304", unpack("H*",$seeker->retrieveStart(2, 2))[1]);
     }
 
@@ -37,7 +37,7 @@ class LocalSeekerTest extends TestCase
      */
     public function testRetrieveEnd()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH .  "single-file.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH .  "single-file.zip");
         $this->assertEquals("520000000000", unpack("H*",$seeker->retrieveEnd(6))[1]);
     }
 
@@ -46,7 +46,7 @@ class LocalSeekerTest extends TestCase
      */
     public function testRetrieveEndWithOffset()
     {
-        $seeker = new LocalSeeker(self::FIXTURE_PATH .  "single-file.zip");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH .  "single-file.zip");
         $this->assertEquals("01005b00", unpack("H*",$seeker->retrieveEnd(4, 12))[1]);
     }
 
@@ -56,7 +56,7 @@ class LocalSeekerTest extends TestCase
     public function testConstructWithNonExistentFile()
     {
         $this->expectException(\InvalidArgumentException::class);
-        $seeker = new LocalSeeker("invalid");
+        $seeker = new LocalFileSeeker("invalid");
     }
 
     /**
@@ -65,6 +65,6 @@ class LocalSeekerTest extends TestCase
     public function testConstructWithNonSeekableFile()
     {
         $this->expectException(NotSeekable::class);
-        $seeker = new LocalSeeker("php://stdin");
+        $seeker = new LocalFileSeeker("php://stdin");
     }
 }

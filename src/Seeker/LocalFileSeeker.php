@@ -7,7 +7,7 @@ use InvalidArgumentException;
 use Mingulay\Exception\NotSeekable;
 use Mingulay\SeekerInterface;
 
-class LocalSeeker implements SeekerInterface
+class LocalFileSeeker implements SeekerInterface
 {
 
     /**
@@ -30,7 +30,7 @@ class LocalSeeker implements SeekerInterface
 
 
     /**
-     * Create a new LocalSeeker object.
+     * Create a new LocalFileSeeker object.
      *
      * @param string $path The path to the local file.
      * @throws NotSeekable Thrown if the opened file pointer is not seekable.
@@ -49,7 +49,7 @@ class LocalSeeker implements SeekerInterface
         $this->size = fstat($this->stream)["size"];
 
         if (!stream_get_meta_data($this->stream)['seekable']) {
-            throw new NotSeekable("The file passed to LocalSeeker must be seekable");
+            throw new NotSeekable("The file passed to LocalFileSeeker must be seekable");
         }
     }
 

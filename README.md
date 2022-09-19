@@ -8,7 +8,7 @@ Mingulay is a PHP library for parsing file information out of [Zip files](https:
 It searches for the End of Central Directory Record, parses out the data, and then uses this to retrieve the Central Directory Records which contain the metadata of the files in the Zip.
 
 ### Usage
-Mingulay requires an object that implements the `Mingulay\SeekerInterface` interface. A LocalFileSeeker implementation is provided for working with Zip files on disk.
+Mingulay requires an object that implements the `Mingulay\SeekerInterface` interface. A `LocalFileSeeker` implementation is provided for working with Zip files on disk.
 
 ```php
 $seeker = new \Mingulay\Seeker\LocalFileSeeker("src/Test/fixtures/single-file.zip");

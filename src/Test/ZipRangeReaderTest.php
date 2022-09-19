@@ -19,7 +19,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFile()
     {
-        $fp = fopen("Test/fixtures/single-file.zip", "rb");
+        $fp = fopen("src/Test/fixtures/single-file.zip", "rb");
         $zip_info = new ZipRangeReader($fp);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
@@ -40,7 +40,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithMultipleFiles()
     {
-        $fp = fopen("Test/fixtures/multiple-files.zip", "rb");
+        $fp = fopen("src/Test/fixtures/multiple-files.zip", "rb");
         $zip_info = new ZipRangeReader($fp);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
@@ -61,7 +61,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFileWithComment()
     {
-        $fp = fopen("Test/fixtures/single-file-with-comment.zip", "rb");
+        $fp = fopen("src/Test/fixtures/single-file-with-comment.zip", "rb");
         $zip_info = new ZipRangeReader($fp);
 
         $this->assertEquals(-67, $zip_info->eocd_offset);
@@ -74,7 +74,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithMultipleFilesWithComment()
     {
-        $fp = fopen("Test/fixtures/multiple-files-with-comment.zip", "rb");
+        $fp = fopen("src/Test/fixtures/multiple-files-with-comment.zip", "rb");
         $zip_info = new ZipRangeReader($fp);
 
         $this->assertEquals(-56, $zip_info->eocd_offset);
@@ -87,7 +87,7 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testConstructWithSingleFileWithFileComment()
     {
-        $fp = fopen("Test/fixtures/single-file-with-file-comment.zip", "rb");
+        $fp = fopen("src/Test/fixtures/single-file-with-file-comment.zip", "rb");
         $zip_info = new ZipRangeReader($fp);
 
         $this->assertEquals(-22, $zip_info->eocd_offset);
@@ -113,7 +113,7 @@ class ZipRangeReaderTest extends TestCase
     public function testConstructWithInvalidFile()
     {
         $this->expectException(InvalidZipFile::class);
-        $fp = fopen("Test/fixtures/invalid-file.zip", "rb");
+        $fp = fopen("src/Test/fixtures/invalid-file.zip", "rb");
         $zip_info = new ZipRangeReader($fp);
         fclose($fp);
     }
@@ -124,7 +124,7 @@ class ZipRangeReaderTest extends TestCase
     public function testConstructWithInvalidEOCD()
     {
         $this->expectException(InvalidZipFile::class);
-        $fp = fopen("Test/fixtures/invalid-eocd.zip", "rb");
+        $fp = fopen("src/Test/fixtures/invalid-eocd.zip", "rb");
         $zip_info = new ZipRangeReader($fp);
         fclose($fp);
     }
@@ -136,7 +136,7 @@ class ZipRangeReaderTest extends TestCase
     {
         $this->expectWarning();
         $this->expectWarningMessage("Invalid Central Directory Header detected");
-        $fp = fopen("Test/fixtures/invalid-cdr.zip", "rb");
+        $fp = fopen("src/Test/fixtures/invalid-cdr.zip", "rb");
         $zip_info = new ZipRangeReader($fp);
         fclose($fp);
     }

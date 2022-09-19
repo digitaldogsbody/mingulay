@@ -6,46 +6,83 @@ use Mingulay\Exception\NotResource;
 use Mingulay\Exception\NotSeekable;
 use Mingulay\Exception\InvalidZipFile;
 
+/**
+ * Provides a utility to parse the directory records from a Zip file
+ */
 class ZipRangeReader
 {
     // Useful Zip constants
-
-    // End of Central Directory signature
+    /**
+     * End of Central Directory signature
+     */
     const EOCD_SIG = 0x06054b50;
-    // Central Directory File Header signature
+    /**
+     * Central Directory File Header signature
+     */
     const CDFH_SIG = 0x02014b50;
-    // Local File Header signature
+    /**
+     * Local File Header signature
+     */
     const LFH_SIG = 0x04034b50;
-
-    // EOCD length in bytes
+    /**
+     * EOCD length in bytes
+     */
     const EOCD_LENGTH = 22;
-    // Maximum extra bytes at the end of a file after the EOCD
+    /**
+     * Maximum extra bytes at the end of a file after the EOCD
+     */
     const MAX_EXTRA = 65535;
 
+    /**
+     * The file handle of the Zip object.
+     * @var resource
+     */
     protected $stream;
 
+    /**
+     * The byte offset of the EOCD from the end of the file. Expressed as a negative.
+     * @var int $eocd_offset
+     */
     public $eocd_offset;
-    public $cdr_offset;
-    public $cdr_size;
-    public $cdr_total;
-    public $files;
 
     /**
-     * Create a new ZipRangeReader object, attempt to parse the zip file and populate a list with file details
+     * The byte offset of the first Central Directory Record from the start of the file.
+     * @var int
+     */
+    public $cdr_offset;
+
+    /**
+     * The total size of all the Central Directory Records in bytes.
+     * @var int
+     */
+    public $cdr_size;
+
+    /**
+     * The number of Central Directory records expected.
+     * @var int
+     */
+    public $cdr_total;
+
+    /**
+     * The list of files inside the zip.
+     * @var array
+     */
+    public $files;
+
+
+    /**
+     * Create a new ZipRangeReader object, attempt to parse the zip file and populate a list with file details.
      *
-     * Parameters:
-     * @param $stream - A file handle to a seekable file
+     * @param resource $stream A file handle to a seekable file.
      *
-     * Exceptions:
-     * @throws NotResource - Returned if the $stream value is not a file handle
-     * @throws NotSeekable - Returned if the $stream file handle is not seekable
-     * @throws InvalidZipFile - Returned if the Zip file is invalid
+     * @throws NotResource - Returned if the $stream value is not a file handle.
+     * @throws NotSeekable - Returned if the $stream file handle is not seekable.
+     * @throws InvalidZipFile - Returned if the Zip file is invalid.
      *
      * Example Usage:
      * $zip_info = new ZipRangeReader('example.zip')
      * var_dump($zip_info->files)
      */
-
     public function __construct($stream)
     {
         $this->stream = $stream;
@@ -75,6 +112,16 @@ class ZipRangeReader
         $this->populateFiles();
     }
 
+    /**
+     * Find the End of Central Directory record.
+     *
+     * This should be the last data structure in the file, with an optional comment afterwards.
+     * Therefore we seek back from the end of the file, starting at the default size of an EOCD, and look for the
+     * magic 4 byte signature of the EOCD record. If not found, walk back 1 byte at a time up to the maximum permitted
+     * offset until either the EOCD is found, the max offset is reached, or the start of the file is reached.
+     *
+     * @return bool true if EOCD was found, false otherwise.
+     */
     private function findEOCD(): bool
     {
         $current_pos = 0 - self::EOCD_LENGTH;
@@ -99,6 +146,11 @@ class ZipRangeReader
         return $found_eocd_header;
     }
 
+    /**
+     * Read information about the Central Directory Records from the EOCD.
+     *
+     * @return bool true if the CDR information was parsed successfully, false otherwise.
+     */
     private function retrieveCDRInfo(): bool
     {
         // We only need a part of the EOCD to get the Central Directory information
@@ -133,6 +185,11 @@ class ZipRangeReader
         }
     }
 
+    /**
+     * Read the Central Directory Records and populate an array of information for each file in the ZIP.
+     *
+     * @return void
+     */
     private function populateFiles()
     {
         // Seek to start of first CDR
@@ -175,6 +232,17 @@ class ZipRangeReader
         }
     }
 
+    /**
+     * Correct the CRC32 values read from the Central Directory Records.
+     *
+     * Due to the Zip format's little-endianness, and the nature of the parsing using `unpack`, we end up
+     * with the hexadecimal byte values in reverse (as the H unpack parameter only ensures each individual byte
+     * is correctly read as little-endian). This function simply splits the resultant CRC strings into byte pairs,
+     * reverses the order and rejoins them, additionally uppercasing the result for convention's sake.
+     *
+     * @param string $crc The CRC read from the CDR.
+     * @return string The corrected CRC value.
+     */
     private function correctCRC(string $crc): string
     {
         return strtoupper(implode(array_reverse(str_split($crc, 2))));

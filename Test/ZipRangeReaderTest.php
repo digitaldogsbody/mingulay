@@ -8,9 +8,15 @@ use Mingulay\Exception\InvalidZipFile;
 use Mingulay\Exception\NotSeekable;
 
 
+/**
+ * Test suite for Mingulay ZipRangeReader.
+ */
 class ZipRangeReaderTest extends TestCase
 {
 
+    /**
+     * Test the construction flow with a valid Zip containing a single file.
+     */
     public function testConstructWithSingleFile()
     {
         $fp = fopen("Test/fixtures/single-file.zip", "rb");
@@ -29,6 +35,9 @@ class ZipRangeReaderTest extends TestCase
         fclose($fp);
     }
 
+    /**
+     * Test the construction flow with a valid Zip containing a multiple files.
+     */
     public function testConstructWithMultipleFiles()
     {
         $fp = fopen("Test/fixtures/multiple-files.zip", "rb");
@@ -47,6 +56,9 @@ class ZipRangeReaderTest extends TestCase
         fclose($fp);
     }
 
+    /**
+     * Test the construction flow with a valid Zip containing a single file and a whole-file comment.
+     */
     public function testConstructWithSingleFileWithComment()
     {
         $fp = fopen("Test/fixtures/single-file-with-comment.zip", "rb");
@@ -57,6 +69,9 @@ class ZipRangeReaderTest extends TestCase
         fclose($fp);
     }
 
+    /**
+     * Test the construction flow with a valid Zip containing multiple files and a whole-file comment.
+     */
     public function testConstructWithMultipleFilesWithComment()
     {
         $fp = fopen("Test/fixtures/multiple-files-with-comment.zip", "rb");
@@ -67,6 +82,9 @@ class ZipRangeReaderTest extends TestCase
         fclose($fp);
     }
 
+    /**
+     * Test the construction flow with a valid Zip containing a single file and a file-level comment.
+     */
     public function testConstructWithSingleFileWithFileComment()
     {
         $fp = fopen("Test/fixtures/single-file-with-file-comment.zip", "rb");
@@ -80,12 +98,18 @@ class ZipRangeReaderTest extends TestCase
         fclose($fp);
     }
 
+    /**
+     * Test that the constructor errors out if you pass it a non-resource object.
+     */
     public function testConstructWithInvalidFD()
     {
         $this->expectException(NotResource::class);
         $zip_info = new ZipRangeReader("you can't pass a string!");
     }
 
+    /**
+     * Test that the constructor errors out if you pass it something that is not a zip file.
+     */
     public function testConstructWithInvalidFile()
     {
         $this->expectException(InvalidZipFile::class);
@@ -94,6 +118,9 @@ class ZipRangeReaderTest extends TestCase
         fclose($fp);
     }
 
+    /**
+     * Test that the constructor errors out if the EOCD is not valid.
+     */
     public function testConstructWithInvalidEOCD()
     {
         $this->expectException(InvalidZipFile::class);
@@ -102,6 +129,9 @@ class ZipRangeReaderTest extends TestCase
         fclose($fp);
     }
 
+    /**
+     * Test that the constructor errors out if the CDR is not valid.
+     */
     public function testConstructWithInvalidCDR()
     {
         $this->expectWarning();
@@ -111,6 +141,9 @@ class ZipRangeReaderTest extends TestCase
         fclose($fp);
     }
 
+    /**
+     * Test that the constructor errors out if you pass it a non-seekable resource.
+     */
     public function testConstructWithNonSeekableFile()
     {
         $this->expectException(NotSeekable::class);

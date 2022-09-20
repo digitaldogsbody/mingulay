@@ -12,7 +12,7 @@ use Mingulay\Seeker\LocalFileSeeker;
 class LocalSeekerTest extends TestCase
 {
 
-    const FIXTURE_PATH = "src/Test/fixtures/";
+    const FIXTURE_PATH = "test/fixtures/";
 
     /**
      * Test retrieval from the start of the file.

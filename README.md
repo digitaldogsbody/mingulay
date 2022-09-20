@@ -23,7 +23,7 @@ Mingulay follows [Semantic Versioning](https://semver.org/) practices. Until rel
 Mingulay requires an object that implements the `Mingulay\SeekerInterface` interface. A `LocalFileSeeker` implementation is provided for working with Zip files on disk.
 
 ```php
-$seeker = new \Mingulay\Seeker\LocalFileSeeker("src/Test/fixtures/single-file.zip");
+$seeker = new \Mingulay\Seeker\LocalFileSeeker("test/fixtures/single-file.zip");
 $zip_info = new \Mingulay\ZipRangeReader($seeker);
 var_dump($zip_info->files);
 ```

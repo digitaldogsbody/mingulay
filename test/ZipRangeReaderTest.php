@@ -13,7 +13,7 @@ use Mingulay\Exception\InvalidZipFile;
 class ZipRangeReaderTest extends TestCase
 {
 
-    const FIXTURE_PATH = "src/Test/fixtures/";
+    const FIXTURE_PATH = "test/fixtures/";
 
     /**
      * Test the construction flow with a valid Zip containing a single file.

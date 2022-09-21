@@ -29,7 +29,7 @@ var_dump($zip_info->files);
 ```
 ```
 array(1) {
-  [0]=>
+  'README.md'=>
   array(6) {
     ["file_name"]=>
     string(9) "README.md"
@@ -45,6 +45,18 @@ array(1) {
     string(0) ""
   }
 }
+```
+Pointers to retrieve individual decompressed files can be acquired with the `getStream()` function:
+```php
+$seeker = new \Mingulay\Seeker\LocalFileSeeker("test/fixtures/multiple-files.zip");
+$zip_info = new \Mingulay\ZipRangeReader($seeker);
+$fp = $zip_info->getStream("LICENSE");
+$local_fp = fopen("/tmp/example", "wb");
+while(!feof($fp)) {
+    fwrite($local_fp, fread($fp, 2048));
+}
+fclose($local_fp);
+fclose($fp);
 ```
 
 ### Acknowledgements and thanks

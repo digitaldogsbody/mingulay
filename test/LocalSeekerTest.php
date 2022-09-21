@@ -51,6 +51,28 @@ class LocalSeekerTest extends TestCase
     }
 
     /**
+     * Test that a file pointer is returned and readable for a file with no compression.
+     */
+    public function testGetStreamNoCompression()
+    {
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "multiple-files.zip");
+        $fp = $seeker->getStream(43, 11299, false);
+        self::assertEquals("# Mingulay", fread($fp, 10));
+        fclose($fp);
+    }
+
+    /**
+     * Test that a file pointer is returned and readable for a file with DEFLATE compression.
+     */
+    public function testGetStreamDeflateCompression()
+    {
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "multiple-files.zip");
+        $fp = $seeker->getStream(11223, 37, true);
+        self::assertEquals("                    GNU AFFERO", fread($fp, 30));
+        fclose($fp);
+    }
+
+    /**
      * Test that the constructor errors out if you pass it a non-seekable resource.
      */
     public function testConstructWithNonExistentFile()

@@ -71,12 +71,10 @@ class LocalFileSeeker implements SeekerInterface
         }
 
         try {
-            // Move to correct position if necessary
-            if($offset > 0) {
-                $seek_success = fseek($this->stream, $offset, SEEK_SET);
-                if ($seek_success === -1) {
-                    return null;
-                }
+            // Move to correct position
+            $seek_success = fseek($this->stream, $offset, SEEK_SET);
+            if ($seek_success === -1) {
+                return null;
             }
 
             // Get the data
@@ -135,4 +133,29 @@ class LocalFileSeeker implements SeekerInterface
             return null;
         }
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function getStream(int $length, int $offset = 0, bool $deflate = true)
+    {
+        // Open a temporary file for the data
+        $fp = fopen("php://temp", "wb");
+        if(!$fp) {
+            return null;
+        }
+        // Set up the decompression filter if required
+        if($deflate) {
+            stream_filter_append($fp, "zlib.inflate", STREAM_FILTER_READ);
+        }
+
+        // Copy the data
+        stream_copy_to_stream($this->stream, $fp, $length, $offset);
+
+        // Seek to the start so the user doesn't have to
+        fseek($fp, 0);
+
+        return $fp;
+    }
+
 }

@@ -6,7 +6,7 @@ use Exception;
 use InvalidArgumentException;
 use Mingulay\SeekerInterface;
 
-class S3FileSeeker implements SeekerInterface {
+class S3ObjectSeeker implements SeekerInterface {
 
   /**
    * The valid s3:// wrapper path to an S3 Object.
@@ -31,7 +31,7 @@ class S3FileSeeker implements SeekerInterface {
 
 
   /**
-   * Create a new LocalFileSeeker object.
+   * Create a new S3ObjectSeeker object.
    *
    * @param string $path The  streamwrapper prefixed path to an S3 Object.
    *

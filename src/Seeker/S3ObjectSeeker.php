@@ -40,8 +40,8 @@ class S3ObjectSeeker implements SeekerInterface {
   public function __construct(string $path) {
     $this->path = $path;
     try {
-      $this->stream = fopen($this->path, "r", FALSE);
-      if (!$this->stream) {
+      $this->size = filesize($path);
+      if ($this->size === FALSE) {
         throw new InvalidArgumentException(
           "The provided S3 Object could not be opened"
         );
@@ -51,10 +51,6 @@ class S3ObjectSeeker implements SeekerInterface {
         "The provided S3 Object could not be opened: " . $e->getMessage()
       );
     }
-    // We close it, that fopen was just to make sure it exists.
-    fclose($this->stream);
-    // Will fetch Content-length via a head request.
-    $this->size = filesize($path);
   }
 
   /**
@@ -86,8 +82,11 @@ class S3ObjectSeeker implements SeekerInterface {
       );
 
       $this->stream = fopen($this->path, "r", FALSE, $context);
-      $data = fread($this->stream, $length);
-      if (!$data) {
+      $data = '';
+      while (!feof( $this->stream)) {
+        $data .= fread($this->stream, 8192);
+      }
+      if (!$data or strlen($data)!= $length) {
         return NULL;
       }
       return $data;
@@ -104,7 +103,6 @@ class S3ObjectSeeker implements SeekerInterface {
     if ($length <= 0 || ($offset + $length) > $this->size) {
       return NULL;
     }
-
     // Make sure we can handle both positive and negative expressions of the offset, just in case.
     $offset = abs($offset);
 
@@ -114,21 +112,24 @@ class S3ObjectSeeker implements SeekerInterface {
     }
 
     try {
+      $to = ($this->size - $offset - 1);
+      $from = $to - $length + 1;
       $context = stream_context_create(
         [
           's3' => [
-            'Range'    => "bytes=" . ((int)$this->size - $offset) - $length - 1
-              . "-" . ((int) $this->size - $offset) - 1,
+            'Range'    => "bytes=" . $from
+              . "-" . $to,
             'seekable' => FALSE,
           ],
         ]
       );
-
+      $data = '';
       $this->stream = fopen($this->path, "r", FALSE, $context);
-
-      // Get the data
-      $data = fread($this->stream, $length);
-      if (!$data) {
+      while (!feof( $this->stream)) {
+        $data .= fread($this->stream, 8192);
+      }
+      // Be sure to close the stream resource when you're done with it
+      if (!$data || strlen($data)!= $length) {
         return NULL;
       }
       return $data;
@@ -137,5 +138,4 @@ class S3ObjectSeeker implements SeekerInterface {
       return NULL;
     }
   }
-
 }

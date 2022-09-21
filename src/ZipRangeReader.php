@@ -226,7 +226,7 @@ class ZipRangeReader
                 continue;
             }
 
-            $this->files[] = array(
+            $this->files[$file_name] = array(
                 "file_name" => $file_name,
                 "offset" => $unpacked["offset"],
                 "compressed_size" => $unpacked["csize"],

@@ -57,7 +57,9 @@ class LocalFileSeeker implements SeekerInterface
      * Destructor function to ensure the file descriptor is closed.
      */
     public function __destruct() {
-        fclose($this->stream);
+        if($this->stream) {
+            fclose($this->stream);
+        }
     }
 
     /**

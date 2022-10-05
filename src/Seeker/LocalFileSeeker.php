@@ -139,16 +139,26 @@ class LocalFileSeeker implements SeekerInterface
     /**
      * @inheritdoc
      */
-    public function getStream(int $length, int $offset = 0, bool $deflate = true)
+    public function getStream(int $length, int $offset = 0, int $compression = 0)
     {
         // Open a temporary file for the data
         $fp = fopen("php://temp", "wb");
         if(!$fp) {
             return null;
         }
-        // Set up the decompression filter if required
-        if($deflate) {
-            stream_filter_append($fp, "zlib.inflate", STREAM_FILTER_READ);
+
+        // Determine if file is compressed with DEFLATE and set up the decompression filter if required
+        switch($compression) {
+            case 0:
+                $deflate = false;
+                break;
+            case 8:
+                stream_filter_append($fp, "zlib.inflate", STREAM_FILTER_READ);
+                break;
+            default:
+                // Unsupported compression type
+                trigger_error("Compression type " . $compression . " is unsupported by LocalFileSeeker", E_USER_WARNING);
+                return null;
         }
 
         // Copy the data

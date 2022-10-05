@@ -67,7 +67,7 @@ class LocalSeekerTest extends TestCase
     public function testGetStreamDeflateCompression()
     {
         $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "multiple-files.zip");
-        $fp = $seeker->getStream(11223, 37, true);
+        $fp = $seeker->getStream(11223, 37, 8);
         self::assertEquals("                    GNU AFFERO", fread($fp, 30));
         fclose($fp);
     }

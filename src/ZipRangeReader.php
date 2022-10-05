@@ -5,7 +5,6 @@ namespace Mingulay;
 use Mingulay\Exception\FileNotFound;
 use Mingulay\Exception\NoData;
 use Mingulay\Exception\InvalidZipFile;
-use Mingulay\Exception\UnsupportedCompression;
 
 /**
  * Provides a utility to parse the directory records from a Zip file
@@ -259,7 +258,6 @@ class ZipRangeReader
      * @param string $path The file path within the zip.
      * @return resource A file pointer to the decompressed byte stream.
      * @throws FileNotFound Thrown if the requested file path does not exist in the zip.
-     * @throws UnsupportedCompression Thrown if the file is compressed with something other than DEFLATE.
      */
     public function getStream(string $path) {
         // Try and retrieve the file from the directory information
@@ -275,21 +273,8 @@ class ZipRangeReader
         // Calculate the offset of the compressed data (File offset + LFH length + file name length + extra field length)
         $data_offset = $file["offset"] + 30 + $file["local_header"]["fnlength"] + $file["local_header"]["eflength"];
 
-        // Determine if file is compressed with DEFLATE
-        switch($file["local_header"]["compression"]) {
-            case 0:
-                $deflate = false;
-                break;
-            case 8:
-                $deflate = true;
-                break;
-            default:
-                // Unsupported compression type
-                throw new UnsupportedCompression("File " . $path . " is compressed with an unsupported compression type");
-        }
-
-        // Return the file pointer to the user
-        return $this->seeker->getStream($file["compressed_size"], $data_offset, $deflate);
+         // Return the file pointer to the user
+        return $this->seeker->getStream($file["compressed_size"], $data_offset, $file["local_header"]["compression"]);
     }
 
     /**

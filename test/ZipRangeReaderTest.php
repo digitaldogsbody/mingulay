@@ -3,7 +3,6 @@
 namespace Mingulay;
 
 use Mingulay\Exception\FileNotFound;
-use Mingulay\Exception\UnsupportedCompression;
 use PHPUnit\Framework\TestCase;
 use Mingulay\Seeker\LocalFileSeeker;
 use Mingulay\Exception\InvalidZipFile;
@@ -145,6 +144,7 @@ class ZipRangeReaderTest extends TestCase
         $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "single-file.zip");
         $zip_info = new ZipRangeReader($seeker);
         $fp = $zip_info->getStream("DoesNotExist");
+        fclose($fp);
     }
 
     /**
@@ -152,9 +152,11 @@ class ZipRangeReaderTest extends TestCase
      */
     public function testGetStreamWithUnsupportedCompression()
     {
-        $this->expectException(UnsupportedCompression::class);
+        $this->expectWarning();
+        $this->expectWarningMessage("Compression type 7 is unsupported by LocalFileSeeker");
         $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "unsupported-compression.zip");
         $zip_info = new ZipRangeReader($seeker);
         $fp = $zip_info->getStream("README.md");
+        fclose($fp);
     }
 }

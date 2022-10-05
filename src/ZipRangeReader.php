@@ -2,6 +2,7 @@
 
 namespace Mingulay;
 
+use Mingulay\Exception\FileNotFound;
 use Mingulay\Exception\NoData;
 use Mingulay\Exception\InvalidZipFile;
 
@@ -224,7 +225,7 @@ class ZipRangeReader
                 continue;
             }
 
-            $this->files[] = array(
+            $this->files[$file_name] = array(
                 "file_name" => $file_name,
                 "offset" => $unpacked["offset"],
                 "compressed_size" => $unpacked["csize"],
@@ -250,4 +251,40 @@ class ZipRangeReader
     {
         return strtoupper(implode(array_reverse(str_split($crc, 2))));
     }
+
+    /**
+     * Return a file pointer to a decompressed byte stream of the file at `$path`.
+     *
+     * @param string $path The file path within the zip.
+     * @return resource A file pointer to the decompressed byte stream.
+     * @throws FileNotFound Thrown if the requested file path does not exist in the zip.
+     */
+    public function getStream(string $path) {
+        // Try and retrieve the file from the directory information
+        $file = @$this->files[$path];
+        if(!$file) {
+            throw new FileNotFound("File " . $path . " not found in the zip file.");
+        }
+
+        // Retrieve the Local File Header
+        $header = $this->seeker->retrieveStart(30, $file["offset"]);
+        $file["local_header"] = $this->readLocalHeader($header);
+
+        // Calculate the offset of the compressed data (File offset + LFH length + file name length + extra field length)
+        $data_offset = $file["offset"] + 30 + $file["local_header"]["fnlength"] + $file["local_header"]["eflength"];
+
+         // Return the file pointer to the user
+        return $this->seeker->getStream($file["compressed_size"], $data_offset, $file["local_header"]["compression"]);
+    }
+
+    /**
+     * Decode a Local File Header and return it as an array of data.
+     *
+     * @param string $header The header data.
+     * @return array An array of the information decoded from the header.
+     */
+    private function readLocalHeader(string $header): array {
+        return unpack("Vheader/vversion/vgeneral/vcompression/vtime/vdate/H8crc/Vcsize/Vusize/vfnlength/veflength/", $header);
+    }
+
 }

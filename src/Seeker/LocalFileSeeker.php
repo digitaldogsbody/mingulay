@@ -57,7 +57,9 @@ class LocalFileSeeker implements SeekerInterface
      * Destructor function to ensure the file descriptor is closed.
      */
     public function __destruct() {
-        fclose($this->stream);
+        if($this->stream) {
+            fclose($this->stream);
+        }
     }
 
     /**
@@ -71,12 +73,10 @@ class LocalFileSeeker implements SeekerInterface
         }
 
         try {
-            // Move to correct position if necessary
-            if($offset > 0) {
-                $seek_success = fseek($this->stream, $offset, SEEK_SET);
-                if ($seek_success === -1) {
-                    return null;
-                }
+            // Move to correct position
+            $seek_success = fseek($this->stream, $offset, SEEK_SET);
+            if ($seek_success === -1) {
+                return null;
             }
 
             // Get the data
@@ -135,4 +135,39 @@ class LocalFileSeeker implements SeekerInterface
             return null;
         }
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function getStream(int $length, int $offset = 0, int $compression = 0)
+    {
+        // Open a temporary file for the data
+        $fp = fopen("php://temp", "wb");
+        if(!$fp) {
+            return null;
+        }
+
+        // Determine if file is compressed with DEFLATE and set up the decompression filter if required
+        switch($compression) {
+            case 0:
+                $deflate = false;
+                break;
+            case 8:
+                stream_filter_append($fp, "zlib.inflate", STREAM_FILTER_READ);
+                break;
+            default:
+                // Unsupported compression type
+                trigger_error("Compression type " . $compression . " is unsupported by LocalFileSeeker", E_USER_WARNING);
+                return null;
+        }
+
+        // Copy the data
+        stream_copy_to_stream($this->stream, $fp, $length, $offset);
+
+        // Seek to the start so the user doesn't have to
+        fseek($fp, 0);
+
+        return $fp;
+    }
+
 }

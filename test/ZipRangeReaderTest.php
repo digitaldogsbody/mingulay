@@ -2,6 +2,7 @@
 
 namespace Mingulay;
 
+use Mingulay\Exception\FileNotFound;
 use PHPUnit\Framework\TestCase;
 use Mingulay\Seeker\LocalFileSeeker;
 use Mingulay\Exception\InvalidZipFile;
@@ -28,10 +29,11 @@ class ZipRangeReaderTest extends TestCase
         $this->assertEquals(91, $zip_info->cdr_size);
         $this->assertEquals(1, $zip_info->cdr_total);
         $this->assertCount(1, $zip_info->files);
-        $this->assertEquals("README.md", $zip_info->files[0]["file_name"]);
-        $this->assertEquals(43, $zip_info->files[0]["uncompressed_size"]);
-        $this->assertEquals(43, $zip_info->files[0]["compressed_size"]);
-        $this->assertEquals("C6E036CC", $zip_info->files[0]["CRC32"]);
+        $this->assertEquals("README.md", array_keys($zip_info->files)[0]);
+        $this->assertEquals("README.md", $zip_info->files["README.md"]["file_name"]);
+        $this->assertEquals(43, $zip_info->files["README.md"]["uncompressed_size"]);
+        $this->assertEquals(43, $zip_info->files["README.md"]["compressed_size"]);
+        $this->assertEquals("C6E036CC", $zip_info->files["README.md"]["CRC32"]);
     }
 
     /**
@@ -47,10 +49,11 @@ class ZipRangeReaderTest extends TestCase
         $this->assertEquals(180, $zip_info->cdr_size);
         $this->assertEquals(2, $zip_info->cdr_total);
         $this->assertCount(2, $zip_info->files);
-        $this->assertEquals("LICENSE", $zip_info->files[0]["file_name"]);
-        $this->assertEquals(34523, $zip_info->files[0]["uncompressed_size"]);
-        $this->assertEquals(11223, $zip_info->files[0]["compressed_size"]);
-        $this->assertEquals("README.md", $zip_info->files[1]["file_name"]);
+        $this->assertEquals(["LICENSE", "README.md"], array_keys($zip_info->files));
+        $this->assertEquals("LICENSE", $zip_info->files["LICENSE"]["file_name"]);
+        $this->assertEquals(34523, $zip_info->files["LICENSE"]["uncompressed_size"]);
+        $this->assertEquals(11223, $zip_info->files["LICENSE"]["compressed_size"]);
+        $this->assertEquals("README.md", $zip_info->files["README.md"]["file_name"]);
     }
 
     /**
@@ -86,7 +89,7 @@ class ZipRangeReaderTest extends TestCase
         $this->assertEquals(-22, $zip_info->eocd_offset);
         $this->assertEquals(82, $zip_info->cdr_offset);
         $this->assertEquals(125, $zip_info->cdr_size);
-        $this->assertEquals("This is an individual file comment", $zip_info->files[0]["comment"]);
+        $this->assertEquals("This is an individual file comment", $zip_info->files["README.md"]["comment"]);
     }
 
     /**
@@ -118,5 +121,42 @@ class ZipRangeReaderTest extends TestCase
         $this->expectWarningMessage("Invalid Central Directory Header detected");
         $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "invalid-cdr.zip");
         $zip_info = new ZipRangeReader($seeker);
+    }
+
+    /**
+     * Test that ::getStream returns file data for a valid file.
+     */
+    public function testGetStreamWithValidFile()
+    {
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "multiple-files.zip");
+        $zip_info = new ZipRangeReader($seeker);
+        $fp = $zip_info->getStream("README.md");
+        self::assertEquals("# Mingulay", fread($fp, 10));
+        fclose($fp);
+    }
+
+    /**
+     * Test that ::getStream throws an error for a non-existent file.
+     */
+    public function testGetStreamWithNonExistentFile()
+    {
+        $this->expectException(FileNotFound::class);
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "single-file.zip");
+        $zip_info = new ZipRangeReader($seeker);
+        $fp = $zip_info->getStream("DoesNotExist");
+        fclose($fp);
+    }
+
+    /**
+     * Test that ::getStream returns an error for a file with an unsupported compression type.
+     */
+    public function testGetStreamWithUnsupportedCompression()
+    {
+        $this->expectWarning();
+        $this->expectWarningMessage("Compression type 7 is unsupported by LocalFileSeeker");
+        $seeker = new LocalFileSeeker(self::FIXTURE_PATH . "unsupported-compression.zip");
+        $zip_info = new ZipRangeReader($seeker);
+        $fp = $zip_info->getStream("README.md");
+        fclose($fp);
     }
 }

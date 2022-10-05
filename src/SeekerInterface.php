@@ -29,4 +29,15 @@ interface SeekerInterface
      * @return string The bytestring of the data.
      */
     public function retrieveEnd(int $length, int $offset = 0): ?string;
+
+    /**
+     * Retrieve a file pointer that returns a decompressed copy of `$length` bytes starting from `$offset`.
+     *
+     * @param int $length The number of bytes to be read.
+     * @param int $offset The offset from the start of the object.
+     * @param int $compression The value of the compression header for the file.
+     * @return resource A file pointer to retrieve the decompressed bytes.
+     */
+    public function getStream(int $length, int $offset = 0, int $compression = 0);
+
 }

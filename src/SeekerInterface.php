@@ -35,9 +35,9 @@ interface SeekerInterface
      *
      * @param int $length The number of bytes to be read.
      * @param int $offset The offset from the start of the object.
-     * @param bool $deflate Whether the file is compressed with DEFLATE or not.
+     * @param int $compression The value of the compression header for the file.
      * @return resource A file pointer to retrieve the decompressed bytes.
      */
-    public function getStream(int $length, int $offset = 0, bool $deflate = true);
+    public function getStream(int $length, int $offset = 0, int $compression = 0);
 
 }

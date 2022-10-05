@@ -4,11 +4,9 @@ on:
   push:
     paths:
       - '**.php'
-      - 'src/**'
   pull_request:
     paths:
       - '**.php'
-      - 'src/**'
 
 jobs:
   build-test:

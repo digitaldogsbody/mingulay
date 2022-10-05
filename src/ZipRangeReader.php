@@ -228,6 +228,7 @@ class ZipRangeReader
             $this->files[$file_name] = array(
                 "file_name" => $file_name,
                 "offset" => $unpacked["offset"],
+                "compression" => $unpacked["compression"],
                 "compressed_size" => $unpacked["csize"],
                 "uncompressed_size" => $unpacked["usize"],
                 "CRC32" => $this->correctCRC($unpacked["crc"]),
@@ -266,15 +267,14 @@ class ZipRangeReader
             throw new FileNotFound("File " . $path . " not found in the zip file.");
         }
 
-        // Retrieve the Local File Header
-        $header = $this->seeker->retrieveStart(30, $file["offset"]);
-        $file["local_header"] = $this->readLocalHeader($header);
+        // Retrieve the length of the filename and extra field from the Local File Header
+        $lfh_field_lengths = unpack("v2", $this->seeker->retrieveStart(30, $file["offset"]+26));
 
         // Calculate the offset of the compressed data (File offset + LFH length + file name length + extra field length)
-        $data_offset = $file["offset"] + 30 + $file["local_header"]["fnlength"] + $file["local_header"]["eflength"];
+        $data_offset = $file["offset"] + 30 + $lfh_field_lengths[1] + $lfh_field_lengths[2];
 
          // Return the file pointer to the user
-        return $this->seeker->getStream($file["compressed_size"], $data_offset, $file["local_header"]["compression"]);
+        return $this->seeker->getStream($file["compressed_size"], $data_offset, $file["compression"]);
     }
 
     /**

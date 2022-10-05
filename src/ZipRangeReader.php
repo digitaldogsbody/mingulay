@@ -268,7 +268,7 @@ class ZipRangeReader
         }
 
         // Retrieve the length of the filename and extra field from the Local File Header
-        $lfh_field_lengths = unpack("v2", $this->seeker->retrieveStart(30, $file["offset"]+26));
+        $lfh_field_lengths = unpack("v2", $this->seeker->retrieveStart(4, $file["offset"]+26));
 
         // Calculate the offset of the compressed data (File offset + LFH length + file name length + extra field length)
         $data_offset = $file["offset"] + 30 + $lfh_field_lengths[1] + $lfh_field_lengths[2];
